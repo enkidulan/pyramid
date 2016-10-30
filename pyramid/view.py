@@ -19,8 +19,10 @@ from pyramid.compat import decode_path_info
 
 from pyramid.exceptions import (
     ConfigurationError,
+    ConfigurationExecutionError,
     PredicateMismatch,
 )
+
 
 from pyramid.httpexceptions import (
     HTTPFound,
@@ -188,14 +190,14 @@ class view_config(object):
     in a class or module context.  It's not often used, but it can be useful
     in this circumstance.  See the ``attach`` function in Venusian for more
     information.
-    
+
     .. seealso::
-    
+
         See also :ref:`mapping_views_using_a_decorator_section` for
         details about using :class:`pyramid.view.view_config`.
 
     .. warning::
-    
+
         ``view_config`` will work ONLY on module top level members
         because of the limitation of ``venusian.Scanner.scan``.
 
@@ -232,15 +234,40 @@ bfg_view = view_config # bw compat (forever)
 
 class view_defaults(view_config):
     """ A class :term:`decorator` which, when applied to a class, will
-    provide defaults for all view configurations that use the class.  This
+    provide defaults for all view configurations that use the class. This
     decorator accepts all the arguments accepted by
     :meth:`pyramid.view.view_config`, and each has the same meaning.
 
-    See :ref:`view_defaults` for more information.
+    view_defaults inheritance. If wrapped class is inherited from any other
+    class that is wrapped with view_defaults decorator then it is possible to
+    inherit parent class view_defaults parameters by setting
+    ``inherit_defaults`` argument to True.
+
+    :class:`pyramid.view.view_config` in addition to all keywords from
+    :ref:`view_defaults` supports the following keyword arguments:
+    ``inherit_defaults``
     """
+    defaults_attr = '__view_defaults__'
+    inherit_flag = 'inherit_defaults'
 
     def __call__(self, wrapped):
-        wrapped.__view_defaults__ = self.__dict__.copy()
+        inherit_defaults = self.__dict__.pop(self.inherit_flag, False)
+        view_defaults = {}
+        if inherit_defaults:
+            if not any(hasattr(b, self.defaults_attr) for b in wrapped.__bases__):
+                raise ConfigurationExecutionError(
+                    etype='NoViewDefaultsToInherit',
+                    evalue=(
+                        'In *view_defaults* option *%s* is set to *True* '
+                        'but there is no parrents for the class that does '
+                        'provide *view_defaults*' % self.inherit_flag),
+                    info=wrapped)
+            for parrent in wrapped.__bases__:
+                view_defaults.update(getattr(parrent, self.defaults_attr, {}))
+            view_defaults.update(self.__dict__)
+        else:
+            view_defaults = self.__dict__.copy()
+        setattr(wrapped, self.defaults_attr, view_defaults)
         return wrapped
 
 class AppendSlashNotFoundViewFactory(object):

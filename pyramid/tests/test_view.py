@@ -7,6 +7,7 @@ from pyramid import testing
 
 from pyramid.interfaces import IRequest
 
+
 class BaseTest(object):
     def setUp(self):
         self.config = testing.setUp()
@@ -52,7 +53,7 @@ class Test_notfound_view_config(BaseTest, unittest.TestCase):
         return notfound_view_config(**kw)
 
     def test_ctor(self):
-        inst = self._makeOne(attr='attr', path_info='path_info', 
+        inst = self._makeOne(attr='attr', path_info='path_info',
                              append_slash=True)
         self.assertEqual(inst.__dict__,
                          {'attr':'attr', 'path_info':'path_info',
@@ -69,8 +70,8 @@ class Test_notfound_view_config(BaseTest, unittest.TestCase):
         config = call_venusian(venusian)
         settings = config.settings
         self.assertEqual(
-            settings, 
-            [{'attr': 'attr', 'venusian': venusian, 'append_slash': True, 
+            settings,
+            [{'attr': 'attr', 'venusian': venusian, 'append_slash': True,
               'renderer': 'renderer', '_info': 'codeinfo', 'view': None}]
             )
 
@@ -111,8 +112,8 @@ class Test_forbidden_view_config(BaseTest, unittest.TestCase):
         config = call_venusian(venusian)
         settings = config.settings
         self.assertEqual(
-            settings, 
-            [{'attr': 'attr', 'venusian': venusian, 
+            settings,
+            [{'attr': 'attr', 'venusian': venusian,
               'renderer': 'renderer', '_info': 'codeinfo', 'view': None}]
             )
 
@@ -188,7 +189,7 @@ class RenderViewToResponseTests(BaseTest, unittest.TestCase):
     def _callFUT(self, *arg, **kw):
         from pyramid.view import render_view_to_response
         return render_view_to_response(*arg, **kw)
-    
+
     def test_call_no_view_registered(self):
         request = self._makeRequest()
         context = self._makeContext()
@@ -254,7 +255,7 @@ class RenderViewToIterableTests(BaseTest, unittest.TestCase):
     def _callFUT(self, *arg, **kw):
         from pyramid.view import render_view_to_iterable
         return render_view_to_iterable(*arg, **kw)
-    
+
     def test_call_no_view_registered(self):
         request = self._makeRequest()
         context = self._makeContext()
@@ -327,7 +328,7 @@ class RenderViewTests(BaseTest, unittest.TestCase):
     def _callFUT(self, *arg, **kw):
         from pyramid.view import render_view
         return render_view(*arg, **kw)
-    
+
     def test_call_no_view_registered(self):
         request = self._makeRequest()
         context = self._makeContext()
@@ -389,7 +390,7 @@ class TestViewConfigDecorator(unittest.TestCase):
     def test_create_for_trumps_context_None(self):
         decorator = self._makeOne(context=None, for_='456')
         self.assertEqual(decorator.context, '456')
-        
+
     def test_create_nondefaults(self):
         decorator = self._makeOne(
             name=None, request_type=None, for_=None,
@@ -411,7 +412,7 @@ class TestViewConfigDecorator(unittest.TestCase):
     def test_create_decorator_tuple(self):
         decorator = self._makeOne(decorator=('decorator1', 'decorator2'))
         self.assertEqual(decorator.decorator, ('decorator1', 'decorator2'))
-        
+
     def test_call_function(self):
         decorator = self._makeOne()
         venusian = DummyVenusian()
@@ -651,7 +652,7 @@ class TestAppendSlashNotFoundViewFactory(BaseTest, unittest.TestCase):
     def _makeOne(self, notfound_view):
         from pyramid.view import AppendSlashNotFoundViewFactory
         return AppendSlashNotFoundViewFactory(notfound_view)
-    
+
     def test_custom_notfound_view(self):
         request = self._makeRequest(PATH_INFO='/abc')
         context = ExceptionResponse()
@@ -723,6 +724,63 @@ class Test_view_defaults(unittest.TestCase):
         @view_defaults()
         class Bar(Foo): pass
         self.assertEqual(Bar.__view_defaults__, {})
+
+    def test_it_inherite_defaults(self):
+        from pyramid.view import view_defaults
+        @view_defaults(route_name='abc', renderer='def')
+        class Foo(object): pass
+        @view_defaults(inherit_defaults=True)
+        class Bar(Foo): pass
+        self.assertEqual(Bar.__view_defaults__['route_name'],'abc')
+        self.assertEqual(Bar.__view_defaults__['renderer'],'def')
+
+    def test_it_inherited_defaults_overriden(self):
+        from pyramid.view import view_defaults
+        @view_defaults(route_name='abc', renderer='def')
+        class Foo(object): pass
+        @view_defaults(renderer='moo', inherit_defaults=True)
+        class Bar(Foo): pass
+        self.assertEqual(Bar.__view_defaults__['route_name'],'abc')
+        self.assertEqual(Bar.__view_defaults__['renderer'],'moo')
+
+    def test_it_inherited_multiple_parrents_defaults_overriden_order(self):
+        from pyramid.view import view_defaults
+        @view_defaults(route_name='abc', renderer='def')
+        class Foo(object): pass
+        @view_defaults(route_name='moo')
+        class Bar(object): pass
+        class Boo(object): pass
+
+        @view_defaults(renderer='mememe', inherit_defaults=True)
+        class Moo(Boo, Foo, Bar): pass
+        self.assertEqual(Moo.__view_defaults__['route_name'],'moo')
+        self.assertEqual(Moo.__view_defaults__['renderer'],'mememe')
+
+        @view_defaults(renderer='mememe', inherit_defaults=True)
+        class Moo(Bar, Foo, Boo): pass
+        self.assertEqual(Moo.__view_defaults__['route_name'],'abc')
+        self.assertEqual(Moo.__view_defaults__['renderer'],'mememe')
+
+    def test_it_inherite_cascade_defaults_overriden(self):
+        from pyramid.view import view_defaults
+        @view_defaults(route_name='abc', renderer='def')
+        class Foo(object): pass
+        @view_defaults(renderer='moo', inherit_defaults=True)
+        class Bar(Foo): pass
+        @view_defaults(method='post', inherit_defaults=True)
+        class Moo(Bar): pass
+        self.assertEqual(Moo.__view_defaults__['route_name'],'abc')
+        self.assertEqual(Moo.__view_defaults__['renderer'],'moo')
+        self.assertEqual(Moo.__view_defaults__['method'],'post')
+
+    def test_it_inheritance_on_class_without_parrent(self):
+        from pyramid.exceptions import ConfigurationExecutionError
+        from pyramid.view import view_defaults
+        def create():
+            @view_defaults(inherit_defaults=True)
+            class Foo(object): pass
+        self.assertRaises(ConfigurationExecutionError, create)
+
 
 class TestViewMethodsMixin(unittest.TestCase):
     def setUp(self):
@@ -902,7 +960,7 @@ class DummyRequest:
         if environ is None:
             environ = {}
         self.environ = environ
-        
+
 from pyramid.interfaces import IResponse
 
 @implementer(IResponse)
@@ -958,7 +1016,7 @@ class DummyConfig(object):
 class DummyVenusianContext(object):
     def __init__(self):
         self.config = DummyConfig()
-        
+
 def call_venusian(venusian, context=None):
     if context is None:
         context = DummyVenusianContext()
