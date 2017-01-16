@@ -145,6 +145,7 @@ Narrative documentation in chapter form explaining how to use :app:`Pyramid`.
    narr/extending
    narr/advconfig
    narr/extconfig
+   narr/cookiecutters
    narr/scaffolding
    narr/upgrading
    narr/threadlocals
@@ -184,6 +185,7 @@ Change History
 .. toctree::
    :maxdepth: 1
 
+   whatsnew-1.8
    whatsnew-1.7
    whatsnew-1.6
    whatsnew-1.5
@@ -213,13 +215,13 @@ Copyright, Trademarks, and Attributions
    copyright
 
 
-Typographical Conventions
-=========================
+Typographical Conventions and Style Guide
+=========================================
 
 .. toctree::
    :maxdepth: 1
 
-   conventions
+   typographical-conventions
 
 
 Index and Glossary

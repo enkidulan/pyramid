@@ -20,8 +20,6 @@ from setuptools import setup, find_packages
 
 py_version = sys.version_info[:2]
 
-PY2 = py_version[0] == 2
-
 if (3, 0) <= py_version < (3, 4):
     warnings.warn(
         'On Python 3, Pyramid only supports Python 3.4 or better',
@@ -41,7 +39,7 @@ except IOError:
 
 install_requires = [
     'setuptools',
-    'WebOb >= 1.3.1', # request.domain and CookieProfile
+    'WebOb >= 1.7.0rc2', # Response.has_body
     'repoze.lru >= 0.4', # py3 compat
     'zope.interface >= 3.8.0',  # has zope.interface.registry
     'zope.deprecation >= 3.5.0', # py3 compat
@@ -53,10 +51,9 @@ install_requires = [
 
 tests_require = [
     'WebTest >= 1.3.1', # py3 compat
+    'zope.component >= 4.0', # py3 compat
     ]
 
-if PY2:
-    tests_require.append('zope.component>=3.11.0')
 
 docs_extras = [
     'Sphinx >= 1.3.5',
@@ -64,7 +61,7 @@ docs_extras = [
     'repoze.sphinx.autointerface',
     'pylons_sphinx_latesturl',
     'pylons-sphinx-themes',
-    'sphinxcontrib-programoutput',
+    'sphinxcontrib-autoprogram',
     ]
 
 testing_extras = tests_require + [
@@ -74,7 +71,7 @@ testing_extras = tests_require + [
     ]
 
 setup(name='pyramid',
-      version='1.8.dev0',
+      version='1.8a1',
       description='The Pyramid Web Framework, a Pylons project',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
